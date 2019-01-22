@@ -1,0 +1,69 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: natgeo-feed
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+plugins:
+  - serverless-dotenv-plugin
+
+provider:
+  name: aws
+  runtime: ruby2.5
+  region: eu-central-1
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "FeedBucket" } ] ]  }
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject*"
+        - "s3:DeleteObject*"
+        - "s3:GetObject*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "Ref" : "FeedBucket"
+            - "/*"
+
+custom:
+  bucket: natgeo-pod-feed
+
+functions:
+  generate_feed:
+    handler: handler.generate_feed
+
+    events:
+      - schedule: cron(00 10 * * ? *)
+
+    environment:
+      BUCKET: ${self:custom.bucket}
+      REGION: ${self:provider.region}
+      API_KEY: ${env:API_KEY}
+      API_USER: ${env:API_USER}
+
+# you can add CloudFormation resource templates here
+resources:
+  Resources:
+    FeedBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucket}
+        WebsiteConfiguration:
+          IndexDocument: feed.xml
