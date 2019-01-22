@@ -23,7 +23,7 @@ plugins:
 provider:
   name: aws
   runtime: ruby2.5
-  region: eu-central-1
+  region: ${env:REGION}
 
   iamRoleStatements:
     - Effect: "Allow"
@@ -42,9 +42,6 @@ provider:
             - "Ref" : "FeedBucket"
             - "/*"
 
-custom:
-  bucket: natgeo-pod-feed
-
 functions:
   generate_feed:
     handler: handler.generate_feed
@@ -53,7 +50,7 @@ functions:
       - schedule: cron(00 10 * * ? *)
 
     environment:
-      BUCKET: ${self:custom.bucket}
+      BUCKET: ${env:BUCKET}
       REGION: ${self:provider.region}
       API_KEY: ${env:API_KEY}
       API_USER: ${env:API_USER}
@@ -64,6 +61,6 @@ resources:
     FeedBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:custom.bucket}
+        BucketName: ${env:BUCKET}
         WebsiteConfiguration:
           IndexDocument: feed.xml
